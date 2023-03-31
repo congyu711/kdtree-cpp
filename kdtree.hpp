@@ -101,6 +101,7 @@ class KdTree {
                            KdNodeVector* result, KdNodePredicate* pred = NULL);
   void range_nearest_neighbors(const CoordPoint& point, double r,
                                KdNodeVector* result);
+  std::vector<CoordPoint> list_points_in_box(kdtree_node* h,const CoordPoint& lo, const CoordPoint& hi);
 };
 
 }  // end namespace Kdtree

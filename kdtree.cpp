@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
+#include <iostream>
 
 namespace Kdtree {
 
@@ -36,6 +37,7 @@ class kdtree_node {
   kdtree_node() {
     dataindex = cutdim = 0;
     loson = hison = (kdtree_node*)NULL;
+    deleted=0;
   }
   ~kdtree_node() {
     if (loson) delete loson;
@@ -52,6 +54,8 @@ class kdtree_node {
   kdtree_node *loson, *hison;
   // bounding rectangle of this node's subtree
   CoordPoint lobound, upbound;
+  bool deleted;
+  std::vector<CoordPoint> points_in_bound;
 };
 
 //--------------------------------------------------------------
@@ -231,6 +235,7 @@ kdtree_node* KdTree::build_tree(size_t depth, size_t a, size_t b) {
   if (b - a <= 1) {
     node->dataindex = a;
     node->point = allnodes[a].point;
+    node->points_in_bound.push_back(node->point);
   } else {
     m = (a + b) / 2;
     std::nth_element(allnodes.begin() + a, allnodes.begin() + m,
@@ -250,8 +255,27 @@ kdtree_node* KdTree::build_tree(size_t depth, size_t a, size_t b) {
       node->hison = build_tree(depth + 1, m + 1, b);
       lobound[node->cutdim] = temp;
     }
+    size_t __sz=0;
+    if(node->loson) __sz+=node->loson->points_in_bound.size();
+    if(node->hison) __sz+=node->hison->points_in_bound.size();
+    node->points_in_bound.reserve(__sz+1);
+    if(node->loson) 
+      node->points_in_bound.insert(node->points_in_bound.end(),
+                                   node->loson->points_in_bound.begin(),node->loson->points_in_bound.end());
+    node->points_in_bound.push_back(node->point);
+    if(node->hison)
+      node->points_in_bound.insert(node->points_in_bound.end(),
+                                   node->hison->points_in_bound.begin(),node->hison->points_in_bound.end());
+    
   }
   return node;
+}
+
+std::vector<CoordPoint> KdTree::list_points_in_box(kdtree_node* h, const CoordPoint& lo, const CoordPoint& hi)
+{
+  auto cutdim=h->cutdim;
+  std::vector<CoordPoint> res;
+  
 }
 
 //--------------------------------------------------------------
