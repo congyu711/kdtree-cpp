@@ -236,27 +236,34 @@ kdtree_node* KdTree::build_tree(size_t depth, size_t a, size_t b) {
     node->dataindex = a;
     node->point = allnodes[a].point;
     node->points_in_bound.push_back(node->point);
+    // only one point, lb = ub = the point.
+    node->lobound=node->point;
+    node->upbound=node->point;
   } else {
     m = (a + b) / 2;
     std::nth_element(allnodes.begin() + a, allnodes.begin() + m,
                      allnodes.begin() + b, compare_dimension(node->cutdim));
     // There is a serious problem. When there exist points with the same value at cutdim
     // I have to search both loson and hison...
+    // the problem is also described here: https://github.com/hku-mars/ikd-Tree/issues/25
+    // just move to the loson all points which have the same value at the cut dim as
+    // the mid point.
     node->point = allnodes[m].point;
     node->cutval = allnodes[m].point[node->cutdim];
     node->dataindex = m;
     if (m - a > 0) {
-      temp = upbound[node->cutdim];
-      upbound[node->cutdim] = node->cutval;
+      // temp = upbound[node->cutdim];
+      // upbound[node->cutdim] = node->cutval;
       node->loson = build_tree(depth + 1, a, m);
-      upbound[node->cutdim] = temp;
+      // upbound[node->cutdim] = temp;
     }
     if (b - m > 0) {  // don't store points in nonchild nodes.
-      temp = lobound[node->cutdim];
-      lobound[node->cutdim] = node->cutval;
+      // temp = lobound[node->cutdim];
+      // lobound[node->cutdim] = node->cutval;
       node->hison = build_tree(depth + 1, m, b);
-      lobound[node->cutdim] = temp;
+      // lobound[node->cutdim] = temp;
     }
+    // maintain points_in_bound
     size_t __sz=0;
     if(node->loson) __sz+=node->loson->points_in_bound.size();
     if(node->hison) __sz+=node->hison->points_in_bound.size();
@@ -267,14 +274,11 @@ kdtree_node* KdTree::build_tree(size_t depth, size_t a, size_t b) {
     if(node->hison)
       node->points_in_bound.insert(node->points_in_bound.end(),
                                    node->hison->points_in_bound.begin(),node->hison->points_in_bound.end());
-    node->lobound.resize(node->point.size());
-    node->upbound.resize(node->point.size());
-    for (int i = 1; i < node->points_in_bound.size(); i++) {
-      for (int j = 0; j < dimension; j++) {
-        auto val = node->points_in_bound[i][j];
-        if (node->lobound[j] > val) node->lobound[j] = val;
-        if (node->upbound[j] < val) node->upbound[j] = val;
-      }
+
+    // maintain lobound and upbound from current node's children;
+    if(node->loson&&node->hison)
+    {
+      
     }
   }
   return node;
